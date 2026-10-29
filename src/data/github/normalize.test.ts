@@ -28,6 +28,7 @@ function fixture(): GitHubBundle {
     releases: [{ id: 12, name: 'First clearing', tag_name: 'v1.0', body: null, html_url: 'https://github.com/garden/project/releases/tag/v1.0', created_at: '2024-01-08T10:00:00Z', published_at: '2024-01-08T11:00:00Z', prerelease: false, author: null }],
     contributors: [{ login: 'mira', avatar_url: '', html_url: 'https://github.com/mira', contributions: 4 }],
     categories: { commits: { nextPage: null, message: null }, pullRequests: { nextPage: null, message: null }, issues: { nextPage: null, message: null }, releases: { nextPage: null, message: null } },
+    commitHistory: { loadedCount: 1, totalCount: 1, isLoading: false, isComplete: true, message: null },
     rateLimit: { remaining: 53, resetAt: null },
     loadedPages: { commits: 1, pullRequests: 1, issues: 1, releases: 1 },
     notes: [],
@@ -52,6 +53,23 @@ describe('timeline mapping', () => {
     expect(afterClosure.resolvedPullRequests).toBe(1)
     expect(afterClosure.resolvedBugs).toBe(1)
     expect(afterClosure.releaseCount).toBe(1)
+  })
+
+  it('extends the world and timeline when an older commit page arrives', () => {
+    const expanded = fixture()
+    expanded.commits.push({
+      sha: 'c'.repeat(40), html_url: 'https://github.com/garden/project/commit/cccc', author: null,
+      commit: { message: 'The earliest seed', author: { name: 'A gardener', date: '2023-12-31T10:00:00Z' }, committer: { name: 'A gardener', date: '2023-12-31T10:00:00Z' } },
+      parents: [],
+    })
+    const events = normalizeBundle(expanded)
+    const [start] = timelineBounds(events, expanded.repository.createdAt, expanded.repository.updatedAt)
+    const current = buildWorldState(events, '2024-01-08T12:00:00Z')
+    const betweenCommits = buildWorldState(events, '2024-01-01T00:00:00Z')
+
+    expect(start).toBe('2023-12-31T10:00:00.000Z')
+    expect(current.commitCount).toBe(2)
+    expect(betweenCommits.commitCount).toBe(1)
   })
 
   it('keeps a deterministic world state and returns timeline bounds', () => {

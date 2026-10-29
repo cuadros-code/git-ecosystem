@@ -22,6 +22,8 @@ export function buildWorldState(events: TimelineEvent[], date: string): WorldSta
 
   const knownCommitCount = events.filter((event) => event.kind === 'commit').length
   const stationProgress = knownCommitCount ? commits.length / knownCommitCount : 0
+  const milestoneCount = Math.floor(commits.length / 100)
+  const commitsToNextMilestone = 100 - (commits.length % 100)
   const stationStage = (commits.length === 0 ? 0 : commits.length <= COMMITS_PER_MODULE ? 1 : commits.length <= COMMITS_PER_MODULE * 3 ? 2 : commits.length <= COMMITS_PER_MODULE * 7 ? 3 : 4) as WorldState['stationStage']
   const stationStageName = ['Awaiting launch', 'First module', 'Growing station', 'Orbital outpost', 'Established station'][stationStage]
   const moduleCount = buildStationModules(events, date).length
@@ -29,6 +31,7 @@ export function buildWorldState(events: TimelineEvent[], date: string): WorldSta
   return {
     date: new Date(time).toISOString(),
     commitCount: commits.length,
+    knownCommitCount,
     branchCount: branches.length,
     openPullRequests: openPullRequests.length,
     resolvedPullRequests: resolvedPullRequests.length,
@@ -36,6 +39,8 @@ export function buildWorldState(events: TimelineEvent[], date: string): WorldSta
     resolvedBugs: resolvedBugs.length,
     contributorCount: contributorIds.size,
     releaseCount: releases.length,
+    milestoneCount,
+    commitsToNextMilestone,
     stationProgress,
     stationStage,
     stationStageName,

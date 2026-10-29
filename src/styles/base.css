@@ -1,34 +1,34 @@
 :root {
   font-family: 'Atkinson Hyperlegible Next Variable', Arial, sans-serif;
-  color: #f1eadc;
-  background: #15232d;
+  color: #f3efdf;
+  background: #0c101a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --forest: #15232d;
-  --forest-deep: #0d1821;
-  --pine: #35515f;
-  --river: #81a9b5;
-  --moss: #5c8b99;
-  --firefly: #e78a57;
-  --mist: #f1eadc;
-  --amber: #e78a57;
-  --bug: #ef7d6a;
-  --quiet: #aebfc1;
-  --line: rgba(220, 210, 184, 0.15);
-  --surface: #243640;
-  --surface-raised: #344a54;
-  --stone: #708d98;
-  --stone-light: #aec1bf;
-  --field: #526f7b;
-  --field-light: #7f9fa8;
-  --wood: #a45b3d;
-  --wood-light: #cf8254;
-  --roof: #a75b42;
-  --roof-light: #e47746;
-  --gold: #e78a57;
-  --parchment: #f1eadc;
-  --beast: #ef7d6a;
-  --sage: #94b4b9;
+  --forest: #111722;
+  --forest-deep: #090e17;
+  --pine: #294337;
+  --river: #67a8b8;
+  --moss: #819d4f;
+  --firefly: #e8c276;
+  --mist: #f3efdf;
+  --amber: #e8c276;
+  --bug: #f06c57;
+  --quiet: #aab9b3;
+  --line: rgba(202, 216, 205, 0.14);
+  --surface: #1a2830;
+  --surface-raised: #26383b;
+  --stone: #647d78;
+  --stone-light: #b8c8b7;
+  --field: #386d7e;
+  --field-light: #65a1ae;
+  --wood: #73503f;
+  --wood-light: #bf8c5c;
+  --roof: #9b2630;
+  --roof-light: #c53539;
+  --gold: #e8c276;
+  --parchment: #f3efdf;
+  --beast: #f06c57;
+  --sage: #8eae71;
   --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
 }
 
@@ -42,7 +42,7 @@ a { color: inherit; text-decoration: none; }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--firefly); outline-offset: 3px; }
 ::selection { color: var(--forest-deep); background: var(--firefly); }
 
-.app-shell { min-height: 100vh; background-color: var(--forest); background-image: radial-gradient(ellipse at 48% -22%, rgba(124,149,133, .13), transparent 47%); }
+.app-shell { min-height: 100vh; background-color: var(--forest); background-image: radial-gradient(ellipse at 48% -22%, rgba(71,111,88, .14), transparent 50%); }
 .app-header { width: min(100% - 72px, 1392px); height: 76px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .brand-lockup { display: inline-flex; align-items: center; gap: 11px; border: 0; padding: 0; background: none; color: var(--mist); font-size: 18px; font-weight: 700; letter-spacing: -.04em; cursor: pointer; }
 a.brand-lockup { cursor: pointer; }

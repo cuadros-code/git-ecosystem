@@ -76,13 +76,16 @@
   .map-tools { display: none; }
   .mobile-detail-toggle { white-space: nowrap; font-size: 9px; }
   .demo-notice, .history-notice { align-items: flex-start; font-size: 9px; }
+  .commit-history-notice { flex-direction: column; align-items: stretch; }
   .demo-notice > button, .history-notice > button { font-size: 9px; }
-  .notice-actions { flex-direction: column; align-items: flex-end; gap: 3px; }
+  .notice-actions { flex-direction: column; align-items: flex-start; gap: 3px; padding-left: 25px; }
   .notice-actions > button { font-size: 8px; }
   .world-frame { padding: 0 7px; }
   .world-edge { min-height: 29px; font-size: 7px; }
+  .world-edge.top-edge span:last-child { display: none; }
   .world-frame > .world-canvas { height: 66vw; min-height: 280px; max-height: 360px; }
   .legend-row { min-height: 51px; gap: 5px; }
+  .world-guide-list { grid-template-columns: 1fr; }
   .legend-chip { min-height: 25px; padding: 3px 6px; gap: 4px; font-size: 8px; }
   .legend-chip > span { font-size: 10px; }
   .timeline-panel { padding: 12px 10px 10px; }

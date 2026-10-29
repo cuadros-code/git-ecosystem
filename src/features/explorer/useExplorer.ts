@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import type { EventKind, RepositorySnapshot, TimelineEvent } from '../../domain/types'
 import type { GitHubBundle } from '../../data/github/types'
 import { DEMO_EVENTS, DEMO_REPOSITORY } from '../../data/sample/demo'
-import { fetchRepository, GitHubRequestError, loadEarlierHistory, parseRepositoryInput } from '../../data/github/client'
+import { fetchRepository, GitHubRequestError, loadAllCommitHistory, loadEarlierHistory, parseRepositoryInput } from '../../data/github/client'
 import { normalizeBundle } from '../../data/github/normalize'
 import { buildWorldState, relativePercent, timelineBounds } from '../../domain/timeline'
 import { formatDate } from '../../shared/eventPresentation'
@@ -27,6 +27,13 @@ export function useExplorer() {
   const [loadError, setLoadError] = useState('')
   const [showMobileDetails, setShowMobileDetails] = useState(false)
   const requestId = useRef(0)
+  const historyAbort = useRef<AbortController | null>(null)
+  const currentBundle = useRef<GitHubBundle | null>(null)
+
+  function storeBundle(next: GitHubBundle | null) {
+    currentBundle.current = next
+    setBundle(next)
+  }
 
   const activeRepository = repository ?? DEMO_REPOSITORY
   const [startDate, endDate] = useMemo(
@@ -48,9 +55,52 @@ export function useExplorer() {
   )
   const selectedEvent = events.find((event) => event.id === selectedEventId) ?? null
   const sliderValue = relativePercent(clampedDate, startDate, endDate) * 10
-  const hasEarlierHistory = Boolean(bundle && Object.values(bundle.categories).some((category) => category.nextPage && !category.message))
-  const hasPartialHistory = Boolean(bundle && (bundle.notes.length || Object.values(bundle.categories).some((category) => category.nextPage || category.message)))
-  const hasFailedTrails = Boolean(bundle && Object.values(bundle.categories).some((category) => category.message))
+  const supplementalCategories = bundle ? [bundle.categories.pullRequests, bundle.categories.issues, bundle.categories.releases] : []
+  const hasEarlierHistory = supplementalCategories.some((category) => category.nextPage && !category.message)
+  const hasPartialHistory = Boolean(bundle && (
+    bundle.notes.some((note) => !note.startsWith('commits:'))
+    || supplementalCategories.some((category) => category.nextPage || category.message)
+  ))
+  const hasFailedTrails = supplementalCategories.some((category) => category.message)
+
+  useEffect(() => () => historyAbort.current?.abort(), [])
+
+  async function continueCommitHistory(initialBundle: GitHubBundle, currentRequest: number, retryQuotaOnce = false) {
+    historyAbort.current?.abort()
+    const controller = new AbortController()
+    historyAbort.current = controller
+    try {
+      const updated = await loadAllCommitHistory(
+        initialBundle,
+        (progress) => {
+          if (currentRequest !== requestId.current || controller.signal.aborted) return
+          storeBundle(progress)
+          setEvents(normalizeBundle(progress))
+        },
+        controller.signal,
+        retryQuotaOnce,
+      )
+      if (currentRequest === requestId.current && !controller.signal.aborted) {
+        storeBundle(updated)
+        setEvents(normalizeBundle(updated))
+      }
+    } catch (error) {
+      if (currentRequest !== requestId.current || controller.signal.aborted) return
+      const latest = currentBundle.current ?? initialBundle
+      const failed: GitHubBundle = {
+        ...latest,
+        commitHistory: {
+          ...latest.commitHistory,
+          isLoading: false,
+          message: error instanceof Error ? error.message : 'Earlier commits could not be loaded.',
+        },
+      }
+      storeBundle(failed)
+    }
+    finally {
+      if (historyAbort.current === controller) historyAbort.current = null
+    }
+  }
 
   useEffect(() => {
     if (!isPlaying) return
@@ -84,15 +134,17 @@ export function useExplorer() {
       setFieldError('Enter a GitHub repository like github.com/owner/repo.')
       return
     }
+    historyAbort.current?.abort()
     requestId.current += 1
     const currentRequest = requestId.current
     setIsLoading(true)
+    setIsLoadingEarlier(false)
     setIsPlaying(false)
     try {
       const result = await fetchRepository(input)
       if (currentRequest !== requestId.current) return
       const normalized = normalizeBundle(result)
-      setBundle(result)
+      storeBundle(result)
       setRepository(result.repository)
       setEvents(normalized)
       setSource('github')
@@ -100,6 +152,9 @@ export function useExplorer() {
       setSelectedEventId(null)
       setSelectedDate(normalized[normalized.length - 1]?.at ?? result.repository.pushedAt ?? result.repository.createdAt)
       setShowMobileDetails(false)
+      if (result.categories.commits.nextPage && !result.categories.commits.message) {
+        void continueCommitHistory(result, currentRequest)
+      }
     } catch (error) {
       if (currentRequest !== requestId.current) return
       if (error instanceof GitHubRequestError && (error.status === 404 || error.status === 400)) {
@@ -118,13 +173,14 @@ export function useExplorer() {
   }
 
   function openDemo() {
+    historyAbort.current?.abort()
     requestId.current += 1
     setIsLoading(false)
     setIsLoadingEarlier(false)
     setLoadError('')
     setFieldError('')
     setRepository(DEMO_REPOSITORY)
-    setBundle(null)
+    storeBundle(null)
     setEvents(DEMO_EVENTS)
     setSource('demo')
     setVisibleKinds(new Set(INITIAL_KINDS))
@@ -135,11 +191,12 @@ export function useExplorer() {
   }
 
   function goHome() {
+    historyAbort.current?.abort()
     requestId.current += 1
     setIsLoading(false)
     setIsLoadingEarlier(false)
     setRepository(null)
-    setBundle(null)
+    storeBundle(null)
     setLoadError('')
     setFieldError('')
     setIsPlaying(false)
@@ -148,28 +205,65 @@ export function useExplorer() {
 
   async function loadEarlier() {
     if (!bundle || isLoadingEarlier) return
+    const currentRequest = requestId.current
     setIsLoadingEarlier(true)
     const updated = await loadEarlierHistory(bundle)
-    setBundle(updated)
-    setEvents(normalizeBundle(updated))
+    if (currentRequest !== requestId.current) return
+    const latest = currentBundle.current ?? updated
+    const merged: GitHubBundle = {
+      ...latest,
+      pullRequests: updated.pullRequests,
+      issues: updated.issues,
+      releases: updated.releases,
+      categories: {
+        ...latest.categories,
+        pullRequests: updated.categories.pullRequests,
+        issues: updated.categories.issues,
+        releases: updated.categories.releases,
+      },
+      loadedPages: {
+        ...latest.loadedPages,
+        pullRequests: updated.loadedPages.pullRequests,
+        issues: updated.loadedPages.issues,
+        releases: updated.loadedPages.releases,
+      },
+      rateLimit: updated.rateLimit,
+      notes: [...new Set([...latest.notes, ...updated.notes])],
+    }
+    storeBundle(merged)
+    setEvents(normalizeBundle(merged))
     setIsLoadingEarlier(false)
+  }
+
+  function resumeCommitHistory() {
+    if (!bundle || bundle.commitHistory.isLoading) return
+    if (!bundle.categories.commits.nextPage) {
+      void retryRepositoryData()
+      return
+    }
+    void continueCommitHistory(bundle, requestId.current, true)
   }
 
   async function retryRepositoryData() {
     if (!repository || source !== 'github' || isLoading) return
+    historyAbort.current?.abort()
     requestId.current += 1
     const currentRequest = requestId.current
     setIsLoading(true)
+    setIsLoadingEarlier(false)
     setLoadError('')
     try {
       const result = await fetchRepository(repository.fullName, true)
       if (currentRequest !== requestId.current) return
       const normalized = normalizeBundle(result)
-      setBundle(result)
+      storeBundle(result)
       setRepository(result.repository)
       setEvents(normalized)
       setSelectedEventId(null)
       setSelectedDate(normalized[normalized.length - 1]?.at ?? result.repository.pushedAt ?? result.repository.createdAt)
+      if (result.categories.commits.nextPage && !result.categories.commits.message) {
+        void continueCommitHistory(result, currentRequest)
+      }
     } catch (error) {
       if (currentRequest !== requestId.current) return
       setLoadError(error instanceof Error ? error.message : 'The repository could not be refreshed.')
@@ -202,5 +296,5 @@ export function useExplorer() {
     })
   }
 
-  return { input, setInput, repository, bundle, events, source, selectedEventId, setSelectedEventId, visibleKinds, isLoading, isLoadingEarlier, isPlaying, fieldError, loadError, showMobileDetails, setShowMobileDetails, startDate, endDate, clampedDate, worldState, latestEvents, selectedEvent, sliderValue, hasEarlierHistory, hasPartialHistory, hasFailedTrails, openRepository, openDemo, goHome, loadEarlier, retryRepositoryData, changeDateFromSlider, toggleTimeline, toggleKind }
+  return { input, setInput, repository, bundle, events, source, selectedEventId, setSelectedEventId, visibleKinds, isLoading, isLoadingEarlier, isPlaying, fieldError, loadError, showMobileDetails, setShowMobileDetails, startDate, endDate, clampedDate, worldState, latestEvents, selectedEvent, sliderValue, hasEarlierHistory, hasPartialHistory, hasFailedTrails, openRepository, openDemo, goHome, loadEarlier, resumeCommitHistory, retryRepositoryData, changeDateFromSlider, toggleTimeline, toggleKind }
 }

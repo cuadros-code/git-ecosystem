@@ -25,7 +25,7 @@ export function TimelineControls({
 }) {
   const markers = events.filter((event) => ['release', 'bug', 'pull_request'].includes(event.kind)).slice(0, 35)
   return <div className="timeline-panel">
-    <div className="timeline-head"><div className="timeline-title"><span className="timeline-icon"><Icon name="clock" size={16} /></span><div><strong>Mission log</strong><small>Travel through the mission</small></div></div><span className="timeline-current">{formatDate(selectedDate, { month: 'short', day: 'numeric', year: 'numeric' })}</span></div>
+    <div className="timeline-head"><div className="timeline-title"><span className="timeline-icon"><Icon name="clock" size={16} /></span><div><strong>Repository history</strong><small>Watch the island grow over time</small></div></div><span className="timeline-current">{formatDate(selectedDate, { month: 'short', day: 'numeric', year: 'numeric' })}</span></div>
     <div className="timeline-controls">
       <button className={`play-button ${isPlaying ? 'is-playing' : ''}`} onClick={onPlay} aria-label={isPlaying ? 'Pause timeline' : 'Play timeline'}>
         <Icon name={isPlaying ? 'pause' : 'play'} size={15} />

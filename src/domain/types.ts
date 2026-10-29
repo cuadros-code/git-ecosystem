@@ -13,6 +13,7 @@ export interface RepositorySnapshot {
   stars: number
   forks: number
   openIssues: number
+  sizeKb: number
 }
 
 export interface TimelineEventBase {
@@ -71,6 +72,7 @@ export type TimelineEvent = CommitEvent | BranchEvent | PullRequestEvent | BugEv
 export interface WorldState {
   date: string
   commitCount: number
+  knownCommitCount: number
   branchCount: number
   openPullRequests: number
   resolvedPullRequests: number
@@ -78,6 +80,8 @@ export interface WorldState {
   resolvedBugs: number
   contributorCount: number
   releaseCount: number
+  milestoneCount: number
+  commitsToNextMilestone: number
   stationProgress: number
   stationStage: 0 | 1 | 2 | 3 | 4
   stationStageName: string

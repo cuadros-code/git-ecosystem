@@ -1,51 +1,71 @@
 import { lazy, Suspense } from 'react'
 import type { CSSProperties } from 'react'
 import type { EventKind, RepositorySnapshot } from '../../domain/types'
-import { EVENT_META, compactNumber, formatDate } from '../../shared/eventPresentation'
+import { EVENT_META, compactNumber, formatDate, formatRepositorySize } from '../../shared/eventPresentation'
 import { Icon } from '../../shared/Icon'
 import { BrandMark } from '../../shared/BrandMark'
-import { EventDetails, SignalRow, WorldSummary } from './Inspector'
+import { EventDetails, SignalRow, WorldGuide, WorldSummary } from './Inspector'
 import { TimelineControls } from './TimelineControls'
 import type { useExplorer } from './useExplorer'
 
-const PixelWorld = lazy(() => import('../station/StationCanvas'))
+const RepositoryWorld = lazy(() => import('../world/RepositoryWorld'))
 
 export function ExplorerScreen({ model, repository }: { model: ReturnType<typeof useExplorer>; repository: RepositorySnapshot }) {
-  const { goHome, source, worldState, clampedDate, showMobileDetails, setShowMobileDetails, openDemo, hasPartialHistory, hasEarlierHistory, loadEarlier, isLoadingEarlier, bundle, hasFailedTrails, retryRepositoryData, isLoading, loadError, events, selectedEventId, setSelectedEventId, visibleKinds, toggleKind, startDate, endDate, sliderValue, isPlaying, toggleTimeline, changeDateFromSlider, selectedEvent, latestEvents } = model
+  const { goHome, source, worldState, clampedDate, showMobileDetails, setShowMobileDetails, openDemo, hasPartialHistory, hasEarlierHistory, loadEarlier, resumeCommitHistory, isLoadingEarlier, bundle, hasFailedTrails, retryRepositoryData, isLoading, loadError, events, selectedEventId, setSelectedEventId, visibleKinds, toggleKind, startDate, endDate, sliderValue, isPlaying, toggleTimeline, changeDateFromSlider, selectedEvent, latestEvents } = model
+  const islandStage = ['Open water', 'First shore', 'Growing island', 'Higher ground', 'Living island'][worldState.stationStage]
+  const commitCoverage = bundle?.commitHistory
+  const commitCount = commitCoverage?.loadedCount ?? 0
+  const visibleBundleNote = bundle?.notes.find((note) => !note.startsWith('commits:'))
   return (
     <main className="app-shell explorer-shell">
       <header className="app-header explorer-header">
-        <button className="brand-lockup" onClick={goHome} aria-label="Return to RepoOrbit home">
+        <button className="brand-lockup" onClick={goHome} aria-label="Return to Git Ecosystem home">
           <BrandMark />
-          <span>RepoOrbit</span>
+          <span>Git Ecosystem</span>
         </button>
-        <div className="header-context"><span className="live-dot" />A station built from code</div>
+        <div className="header-context"><span className="live-dot" />A world built from code</div>
         <button className="quiet-button change-repo-button" onClick={goHome}><Icon name="back" size={16} /> Change repository</button>
       </header>
 
       <div className="explorer-content">
         <section className="repo-heading" aria-labelledby="repo-title">
           <div className="repo-main">
-            <div className="crumb"><span>STATION</span><span className="crumb-slash">/</span><span>{source === 'demo' ? 'SAMPLE RECORD' : 'PUBLIC REPOSITORY'}</span></div>
+            <div className="crumb"><span>ISLAND</span><span className="crumb-slash">/</span><span>{source === 'demo' ? 'SAMPLE WORLD' : 'PUBLIC REPOSITORY'}</span></div>
             <h1 id="repo-title">{repository.fullName}</h1>
-            <p>{repository.description || 'A mission built in the open.'}</p>
+            <p>{repository.description || 'A project growing in the open.'}</p>
           </div>
           <div className="repo-stats" aria-label="Repository statistics">
             <Stat value={compactNumber(repository.stars)} label="Stars" icon="✳" />
             <Stat value={compactNumber(repository.forks)} label="Forks" icon="⌁" />
-            <Stat value={worldState.contributorCount.toLocaleString()} label="Crew" icon="◆" />
+            <Stat value={worldState.contributorCount.toLocaleString()} label="Contributors" icon="◆" />
           </div>
         </section>
 
         <div className="workspace-toolbar">
-          <div className="map-heading"><span className="pixel-marker" /><div><strong>Station map</strong><span>{worldState.stationStageName} · {worldState.commitCount.toLocaleString()} loaded commits by {formatDate(clampedDate, { month: 'long', year: 'numeric' })}</span></div></div>
+          <div className="map-heading"><span className="pixel-marker" /><div><strong>Repository island</strong><span>{islandStage} · {worldState.commitCount.toLocaleString()} commits · {worldState.milestoneCount} {worldState.milestoneCount === 1 ? 'landmark' : 'landmarks'} · {formatRepositorySize(repository.sizeKb)} repo</span></div></div>
           <button className="mobile-detail-toggle" onClick={() => setShowMobileDetails((open) => !open)} aria-expanded={showMobileDetails}>
             {showMobileDetails ? 'Hide details' : 'Explore details'}
           </button>
-          <div className="map-tools"><span><span className="tool-dot" />History loaded</span><a href={repository.htmlUrl} target="_blank" rel="noreferrer">View on GitHub <Icon name="arrow" size={14} /></a></div>
+          <div className="map-tools"><a href={repository.htmlUrl} target="_blank" rel="noreferrer">View on GitHub <Icon name="arrow" size={14} /></a></div>
         </div>
 
-        {source === 'demo' && <div className="demo-notice"><Icon name="spark" size={15} /><span>Sample station · fictional activity, clearly marked for exploration</span><button onClick={openDemo}>Sample record</button></div>}
+        {source === 'demo' && <div className="demo-notice"><Icon name="spark" size={15} /><span>Sample island · fictional activity for exploration</span><button onClick={openDemo}>Sample record</button></div>}
+        {source === 'github' && bundle && (
+          <div className={`history-notice commit-history-notice ${bundle.commitHistory.isComplete ? 'is-complete' : bundle.commitHistory.message ? 'is-paused' : ''}`} role="status" aria-live="polite">
+            <div><span className="notice-icon" aria-hidden="true">{bundle.commitHistory.isComplete ? '✓' : bundle.commitHistory.isLoading ? '↻' : 'i'}</span><span>
+              {bundle.commitHistory.isComplete
+                ? `Full ${repository.defaultBranch} history · ${(bundle.commitHistory.totalCount ?? commitCount).toLocaleString()} commits.`
+                : bundle.commitHistory.isLoading
+                  ? `${commitCount.toLocaleString()} commits loaded. Loading the rest of ${repository.defaultBranch}…`
+                  : `${commitCount.toLocaleString()} commits loaded. ${bundle.commitHistory.message || 'The full history is not available yet.'}`}
+            </span></div>
+            {!bundle.commitHistory.isComplete && !bundle.commitHistory.isLoading && (bundle.categories.commits.nextPage || bundle.categories.commits.message) && (
+              <div className="notice-actions"><button onClick={bundle.categories.commits.nextPage ? resumeCommitHistory : retryRepositoryData} disabled={isLoading}>
+                {isLoading ? 'Retrying…' : bundle.categories.commits.nextPage ? 'Resume commit history' : 'Retry commit history'}
+              </button></div>
+            )}
+          </div>
+        )}
         {source === 'github' && hasPartialHistory && (
           <div className="history-notice" role="status">
             <div><span className="notice-icon">i</span><span>{hasEarlierHistory ? 'Showing the latest available history. Older events can be loaded as needed.' : 'Some event records may be incomplete because of GitHub’s public data limits.'}</span></div>
@@ -55,16 +75,17 @@ export function ExplorerScreen({ model, repository }: { model: ReturnType<typeof
             </div>
           </div>
         )}
-        {source === 'github' && bundle?.notes.length ? <p className="subtle-warning">{bundle.notes[0]}</p> : null}
+        {source === 'github' && visibleBundleNote ? <p className="subtle-warning">{visibleBundleNote}</p> : null}
         {loadError && <p className="subtle-warning" role="alert">{loadError}</p>}
 
-        <section className={`explorer-grid ${showMobileDetails ? 'details-open' : ''}`} aria-label="Repository station explorer">
+        <section className={`explorer-grid ${showMobileDetails ? 'details-open' : ''}`} aria-label="Repository world explorer">
           <div className="map-column">
             <div className="world-frame">
-              <div className="world-edge top-edge"><span>Orbital station · top view</span><span>One station, built over time</span></div>
-              <Suspense fallback={<div className="world-canvas world-loading" role="status">Preparing the station…</div>}>
-                <PixelWorld
+              <div className="world-edge top-edge"><span>Voxel island · isometric view</span><span>Drag or swipe to orbit · scroll or pinch to zoom</span></div>
+              <Suspense fallback={<div className="world-canvas world-loading" role="status">Growing the island…</div>}>
+                <RepositoryWorld
                   repoName={repository.fullName}
+                  repoSizeKb={repository.sizeKb}
                   events={events}
                   state={worldState}
                   selectedEventId={selectedEventId}
@@ -75,16 +96,17 @@ export function ExplorerScreen({ model, repository }: { model: ReturnType<typeof
               <div className="world-edge bottom-edge"><span><span className="coordinate-dot" />{events.length.toLocaleString()} recorded events</span><span>{worldState.branchCount} branches · {worldState.openBugs} active alerts</span></div>
             </div>
 
-            <div className="legend-row" aria-label="Toggle station event layers">
+            <div className="legend-row" aria-label="Toggle world event layers">
               {Object.entries(EVENT_META).map(([kind, meta]) => {
                 const typedKind = kind as EventKind
                 const active = visibleKinds.has(typedKind)
-                return <button key={kind} className={`legend-chip ${active ? 'active' : ''}`} onClick={() => toggleKind(typedKind)} aria-pressed={active} style={{ '--chip-color': meta.color } as CSSProperties}>
+                return <button key={kind} className={`legend-chip ${active ? 'active' : ''}`} onClick={() => toggleKind(typedKind)} aria-pressed={active} aria-label={`${meta.short}. ${meta.description}`} title={meta.description} style={{ '--chip-color': meta.color } as CSSProperties}>
                   <span>{meta.icon}</span>{meta.short}
                 </button>
               })}
-              <span className="legend-hint">Select a layer to focus the map</span>
+              <span className="legend-hint">Toggle layers · open the map key for meanings</span>
             </div>
+            <WorldGuide repoSizeKb={repository.sizeKb} knownCommitCount={worldState.knownCommitCount} />
 
             <TimelineControls
               startDate={startDate}
@@ -99,13 +121,12 @@ export function ExplorerScreen({ model, repository }: { model: ReturnType<typeof
           </div>
 
           <aside className="inspector-panel" aria-label="Selected event and recent records">
-            <div className="inspector-heading"><div><span className="panel-kicker">MISSION LOG</span><h2>{selectedEvent ? 'Record details' : 'Station at a glance'}</h2></div><button className="mobile-close" onClick={() => setShowMobileDetails(false)} aria-label="Close details"><Icon name="close" size={18} /></button></div>
+            <div className="inspector-heading"><div><span className="panel-kicker">REPOSITORY HISTORY</span><h2>{selectedEvent ? 'Record details' : 'Island at a glance'}</h2></div><button className="mobile-close" onClick={() => setShowMobileDetails(false)} aria-label="Close details"><Icon name="close" size={18} /></button></div>
             {selectedEvent ? <EventDetails event={selectedEvent} currentDate={clampedDate} /> : <WorldSummary state={worldState} />}
             <div className="signals-heading"><span>Recent records</span><span>{latestEvents.length} shown</span></div>
             <div className="signal-list" role="list" aria-label="Recent repository events">
-              {latestEvents.length ? latestEvents.map((event) => <SignalRow key={event.id} event={event} selected={event.id === selectedEventId} onSelect={() => { setSelectedEventId(event.id); setShowMobileDetails(true) }} />) : <p className="empty-signals">No records yet at this date. Move forward to watch the station grow.</p>}
+              {latestEvents.length ? latestEvents.map((event) => <SignalRow key={event.id} event={event} selected={event.id === selectedEventId} onSelect={() => { setSelectedEventId(event.id); setShowMobileDetails(true) }} />) : <p className="empty-signals">No records yet at this date. Move forward to watch the island take shape.</p>}
             </div>
-            <div className="coverage-footnote"><span className="footnote-mark">~</span><span>Modules grow for every 20 loaded commits, up to eight; larger histories add up to four arrays. Loading earlier history can regroup modules. Branch and crew dates may be estimated.</span></div>
           </aside>
         </section>
 
@@ -118,4 +139,5 @@ export function ExplorerScreen({ model, repository }: { model: ReturnType<typeof
 function Stat({ value, label, icon }: { value: string; label: string; icon: string }) {
   return <div className="stat-item"><span className="stat-icon">{icon}</span><span className="stat-value">{value}</span><span className="stat-label">{label}</span></div>
 }
+
 

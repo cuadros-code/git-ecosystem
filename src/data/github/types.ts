@@ -7,6 +7,14 @@ export interface CategoryStatus {
   message: string | null
 }
 
+export interface CommitHistoryCoverage {
+  loadedCount: number
+  totalCount: number | null
+  isLoading: boolean
+  isComplete: boolean
+  message: string | null
+}
+
 export interface RateLimitState {
   remaining: number | null
   resetAt: string | null
@@ -88,6 +96,7 @@ export interface GitHubBundle {
   releases: GitHubReleaseRecord[]
   contributors: GitHubContributorRecord[]
   categories: Record<HistoryCategory, CategoryStatus>
+  commitHistory: CommitHistoryCoverage
   rateLimit: RateLimitState
   loadedPages: Record<HistoryCategory, number>
   notes: string[]
