@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "format": "prettier --write \"index.html\" \"vite.config.ts\" \"package.json\" \"tsconfig.json\" \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"index.html\" \"vite.config.ts\" \"package.json\" \"tsconfig.json\" \"src/**/*.{ts,tsx,css}\""
   },
   "dependencies": {
     "@fontsource-variable/atkinson-hyperlegible-next": "^5.3.0",
@@ -22,6 +24,7 @@
     "@types/react-dom": "^19.1.0",
     "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^4.7.0",
+    "prettier": "^3.9.10",
     "typescript": "~5.9.2",
     "vite": "^6.4.0",
     "vitest": "^5.0.5"

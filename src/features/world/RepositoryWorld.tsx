@@ -30,12 +30,29 @@ const VOXEL_COLORS: Record<VoxelType, number> = {
 }
 
 function createMaterials() {
-  return Object.fromEntries(VOXEL_TYPES.map((type) => [type, new THREE.MeshStandardMaterial({
-    color: VOXEL_COLORS[type],
-    roughness: type === 'milestoneGold' ? 0.48 : type === 'milestoneCrystal' || type === 'glass' ? 0.34 : 0.94,
-    metalness: type === 'milestoneGold' ? 0.24 : type === 'milestoneCrystal' ? 0.1 : type === 'glass' ? 0.08 : 0,
-    flatShading: true,
-  })])) as Record<VoxelType, THREE.MeshStandardMaterial>
+  return Object.fromEntries(
+    VOXEL_TYPES.map(type => [
+      type,
+      new THREE.MeshStandardMaterial({
+        color: VOXEL_COLORS[type],
+        roughness:
+          type === 'milestoneGold'
+            ? 0.48
+            : type === 'milestoneCrystal' || type === 'glass'
+              ? 0.34
+              : 0.94,
+        metalness:
+          type === 'milestoneGold'
+            ? 0.24
+            : type === 'milestoneCrystal'
+              ? 0.1
+              : type === 'glass'
+                ? 0.08
+                : 0,
+        flatShading: true,
+      }),
+    ]),
+  ) as Record<VoxelType, THREE.MeshStandardMaterial>
 }
 
 export default function RepositoryWorld(props: RepositoryWorldProps) {
@@ -58,7 +75,12 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
   const [renderError, setRenderError] = useState(false)
   propsRef.current = props
 
-  const currentWorldKey = worldKey(props.repoName, props.repoSizeKb, props.state, props.visibleKinds)
+  const currentWorldKey = worldKey(
+    props.repoName,
+    props.repoSizeKb,
+    props.state,
+    props.visibleKinds,
+  )
 
   useEffect(() => {
     const host = hostRef.current
@@ -89,7 +111,11 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       camera.lookAt(0, 1.2, 0)
       cameraRef.current = camera
 
-      renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' })
+      renderer = new THREE.WebGLRenderer({
+        antialias: false,
+        alpha: false,
+        powerPreference: 'high-performance',
+      })
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
       renderer.outputColorSpace = THREE.SRGBColorSpace
       renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -98,7 +124,10 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       renderer.shadowMap.type = THREE.PCFSoftShadowMap
       renderer.domElement.setAttribute('role', 'img')
       renderer.domElement.setAttribute('tabindex', '0')
-      renderer.domElement.setAttribute('aria-label', `Interactive voxel island for ${propsRef.current.repoName}. Use arrow keys to rotate and plus or minus to zoom.`)
+      renderer.domElement.setAttribute(
+        'aria-label',
+        `Interactive voxel island for ${propsRef.current.repoName}. Use arrow keys to rotate and plus or minus to zoom.`,
+      )
       renderer.domElement.className = 'world-canvas-surface'
       host.appendChild(renderer.domElement)
       rendererRef.current = renderer
@@ -119,7 +148,11 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
 
       const bottomGeometry = new THREE.BoxGeometry(1, 0.48, 1)
       staticGeometries.push(bottomGeometry)
-      const bottomMaterial = new THREE.MeshStandardMaterial({ color: 0x132638, roughness: 0.76, flatShading: true })
+      const bottomMaterial = new THREE.MeshStandardMaterial({
+        color: 0x132638,
+        roughness: 0.76,
+        flatShading: true,
+      })
       staticMaterials.push(bottomMaterial)
       const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial)
       bottom.scale.set(23.8, 1, 23.8)
@@ -131,7 +164,12 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
 
       const waterGeometry = new THREE.BoxGeometry(1, 0.58, 1)
       staticGeometries.push(waterGeometry)
-      const waterMaterial = new THREE.MeshStandardMaterial({ color: 0x12617f, roughness: 0.52, metalness: 0.08, flatShading: true })
+      const waterMaterial = new THREE.MeshStandardMaterial({
+        color: 0x12617f,
+        roughness: 0.52,
+        metalness: 0.08,
+        flatShading: true,
+      })
       staticMaterials.push(waterMaterial)
       const water = new THREE.Mesh(waterGeometry, waterMaterial)
       water.scale.set(23, 1, 23)
@@ -148,7 +186,12 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       const outlineBoxGeometry = new THREE.BoxGeometry(1.12, 1.12, 1.12)
       staticGeometries.push(outlineBoxGeometry)
       outlineGeometry = new THREE.EdgesGeometry(outlineBoxGeometry)
-      outlineMaterial = new THREE.LineBasicMaterial({ color: 0xf0cf75, transparent: true, opacity: 0.95, depthTest: false })
+      outlineMaterial = new THREE.LineBasicMaterial({
+        color: 0xf0cf75,
+        transparent: true,
+        opacity: 0.95,
+        depthTest: false,
+      })
       const highlight = new THREE.LineSegments(outlineGeometry, outlineMaterial)
       highlight.visible = false
       highlight.renderOrder = 5
@@ -194,8 +237,10 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
 
       const moveCamera = (key: string) => {
         if (!controls || !camera) return false
-        if (key === '+' || key === '=' || key === 'Add') camera.zoom = Math.min(controls.maxZoom, camera.zoom + 0.12)
-        else if (key === '-' || key === '_' || key === 'Subtract') camera.zoom = Math.max(controls.minZoom, camera.zoom - 0.12)
+        if (key === '+' || key === '=' || key === 'Add')
+          camera.zoom = Math.min(controls.maxZoom, camera.zoom + 0.12)
+        else if (key === '-' || key === '_' || key === 'Subtract')
+          camera.zoom = Math.max(controls.minZoom, camera.zoom - 0.12)
         else if (key.startsWith('Arrow')) {
           const offset = camera.position.clone().sub(controls.target)
           const spherical = new THREE.Spherical().setFromVector3(offset)
@@ -219,9 +264,15 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       onKeyDown = (event: KeyboardEvent) => {
         if (moveCamera(event.key)) event.preventDefault()
       }
-      onPointerDown = (event: PointerEvent) => { pointerOrigin = { x: event.clientX, y: event.clientY } }
+      onPointerDown = (event: PointerEvent) => {
+        pointerOrigin = { x: event.clientX, y: event.clientY }
+      }
       onPointerUp = (event: PointerEvent) => {
-        if (!renderer || !pointerOrigin || Math.hypot(event.clientX - pointerOrigin.x, event.clientY - pointerOrigin.y) > 5) {
+        if (
+          !renderer ||
+          !pointerOrigin ||
+          Math.hypot(event.clientX - pointerOrigin.x, event.clientY - pointerOrigin.y) > 5
+        ) {
           pointerOrigin = null
           return
         }
@@ -238,7 +289,9 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
         const hits = raycaster.intersectObjects(world.children, false)
         for (const hit of hits) {
           if (hit.instanceId === undefined) continue
-          const eventId = (hit.object.userData.eventIds as Array<string | null> | undefined)?.[hit.instanceId]
+          const eventId = (hit.object.userData.eventIds as Array<string | null> | undefined)?.[
+            hit.instanceId
+          ]
           if (eventId) {
             propsRef.current.onSelectEvent(eventId)
             return
@@ -249,13 +302,13 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       renderer.domElement.addEventListener('pointerdown', onPointerDown)
       renderer.domElement.addEventListener('pointerup', onPointerUp)
 
-      renderer.setAnimationLoop((time) => {
+      renderer.setAnimationLoop(time => {
         if (time - frameClock < 1000 / 30) return
         frameClock = time
         controls?.update()
-        if (sceneRef.current && cameraRef.current) renderer?.render(sceneRef.current, cameraRef.current)
+        if (sceneRef.current && cameraRef.current)
+          renderer?.render(sceneRef.current, cameraRef.current)
       })
-
     } catch {
       setRenderError(true)
     }
@@ -266,7 +319,8 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       controls?.dispose()
       renderer?.setAnimationLoop(null)
       if (renderer && onKeyDown) renderer.domElement.removeEventListener('keydown', onKeyDown)
-      if (renderer && onPointerDown) renderer.domElement.removeEventListener('pointerdown', onPointerDown)
+      if (renderer && onPointerDown)
+        renderer.domElement.removeEventListener('pointerdown', onPointerDown)
       if (renderer && onPointerUp) renderer.domElement.removeEventListener('pointerup', onPointerUp)
       if (worldGroupRef.current) {
         gsap.killTweensOf(worldGroupRef.current.scale)
@@ -275,11 +329,12 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       renderer?.dispose()
       renderer?.domElement.remove()
       if (geometryRef.current) geometryRef.current.dispose()
-      materialsRef.current && Object.values(materialsRef.current).forEach((material) => material.dispose())
+      materialsRef.current &&
+        Object.values(materialsRef.current).forEach(material => material.dispose())
       outlineGeometry?.dispose()
       outlineMaterial?.dispose()
-      staticGeometries.forEach((geometry) => geometry.dispose())
-      staticMaterials.forEach((material) => material.dispose())
+      staticGeometries.forEach(geometry => geometry.dispose())
+      staticMaterials.forEach(material => material.dispose())
       sceneRef.current = null
       rendererRef.current = null
       cameraRef.current = null
@@ -316,7 +371,17 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
     }
     resizeRef.current?.()
     const showTerrain = propsRef.current.visibleKinds.has('commit')
-    for (const type of ['soil', 'soilLight', 'grass', 'grassLight', 'sand', 'rock', 'milestoneStone', 'milestoneGold', 'milestoneCrystal'] as const) {
+    for (const type of [
+      'soil',
+      'soilLight',
+      'grass',
+      'grassLight',
+      'sand',
+      'rock',
+      'milestoneStone',
+      'milestoneGold',
+      'milestoneCrystal',
+    ] as const) {
       materials[type].color.setHex(showTerrain ? VOXEL_COLORS[type] : 0x555d5b)
     }
     const world = new THREE.Group()
@@ -330,7 +395,7 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       instances.name = type
       instances.castShadow = true
       instances.receiveShadow = true
-      instances.userData.eventIds = placements.map((placement) => placement.eventId)
+      instances.userData.eventIds = placements.map(placement => placement.eventId)
       placements.forEach((placement, index) => {
         dummy.position.set(placement.x, placement.y, placement.z)
         dummy.updateMatrix()
@@ -358,7 +423,9 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
     renderer.render(scene, cameraRef.current!)
   }, [currentWorldKey])
 
-  useEffect(() => { updateHighlight(props.selectedEventId) }, [props.selectedEventId, currentWorldKey])
+  useEffect(() => {
+    updateHighlight(props.selectedEventId)
+  }, [props.selectedEventId, currentWorldKey])
 
   function updateHighlight(eventId: string | null) {
     const highlight = highlightRef.current
@@ -372,8 +439,17 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
     highlight.visible = true
   }
 
-  return <div className="world-canvas" ref={hostRef}>
-    {renderError && <p className="world-error" role="alert">This browser could not render the 3D island. You can still browse the repository history in the log.</p>}
-    <span className="world-interaction-hint" aria-hidden="true">Drag to orbit · pinch or scroll to zoom</span>
-  </div>
+  return (
+    <div className="world-canvas" ref={hostRef}>
+      {renderError && (
+        <p className="world-error" role="alert">
+          This browser could not render the 3D island. You can still browse the repository history
+          in the log.
+        </p>
+      )}
+      <span className="world-interaction-hint" aria-hidden="true">
+        Drag to orbit · pinch or scroll to zoom
+      </span>
+    </div>
+  )
 }

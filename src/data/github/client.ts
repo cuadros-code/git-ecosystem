@@ -86,11 +86,14 @@ function readRateLimit(headers: Headers): RateLimitState {
 
 function nextLink(linkHeader: string | null): string | null {
   if (!linkHeader) return null
-  const next = linkHeader.split(',').find((part) => /rel="next"/.test(part))
+  const next = linkHeader.split(',').find(part => /rel="next"/.test(part))
   return next?.match(/<([^>]+)>/)?.[1] ?? null
 }
 
-async function requestJson<T>(url: string, signal?: AbortSignal): Promise<{ data: T; rateLimit: RateLimitState; nextPage: string | null }> {
+async function requestJson<T>(
+  url: string,
+  signal?: AbortSignal,
+): Promise<{ data: T; rateLimit: RateLimitState; nextPage: string | null }> {
   const response = await fetch(url, {
     headers: {
       Accept: 'application/vnd.github+json',
@@ -109,7 +112,11 @@ async function requestJson<T>(url: string, signal?: AbortSignal): Promise<{ data
     }
     throw new GitHubRequestError(message, response.status, rateLimit.resetAt, rateLimit.remaining)
   }
-  return { data: (await response.json()) as T, rateLimit, nextPage: nextLink(response.headers.get('link')) }
+  return {
+    data: (await response.json()) as T,
+    rateLimit,
+    nextPage: nextLink(response.headers.get('link')),
+  }
 }
 
 function toSnapshot(record: GitHubRepositoryRecord): RepositorySnapshot {
@@ -155,7 +162,12 @@ function rateNote(rateLimit: RateLimitState): string | null {
     : "GitHub's request limit has been reached. Try again later."
 }
 
-function categoryUrl(owner: string, repo: string, key: HistoryCategory, defaultBranch: string): string {
+function categoryUrl(
+  owner: string,
+  repo: string,
+  key: HistoryCategory,
+  defaultBranch: string,
+): string {
   const root = `${API_ROOT}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`
   const queries: Record<HistoryCategory, string> = {
     commits: `commits?sha=${encodeURIComponent(defaultBranch)}&per_page=100`,
@@ -168,8 +180,10 @@ function categoryUrl(owner: string, repo: string, key: HistoryCategory, defaultB
 
 function setCategoryPage(bundle: GitHubBundle, key: HistoryCategory, items: unknown[]) {
   if (key === 'commits') bundle.commits = [...bundle.commits, ...(items as GitHubBundle['commits'])]
-  else if (key === 'pullRequests') bundle.pullRequests = [...bundle.pullRequests, ...(items as GitHubBundle['pullRequests'])]
-  else if (key === 'issues') bundle.issues = [...bundle.issues, ...(items as GitHubBundle['issues'])]
+  else if (key === 'pullRequests')
+    bundle.pullRequests = [...bundle.pullRequests, ...(items as GitHubBundle['pullRequests'])]
+  else if (key === 'issues')
+    bundle.issues = [...bundle.issues, ...(items as GitHubBundle['issues'])]
   else bundle.releases = [...bundle.releases, ...(items as GitHubBundle['releases'])]
 }
 
@@ -182,7 +196,13 @@ function setFirstCategoryPage(bundle: GitHubBundle, key: HistoryCategory, items:
 
 export async function fetchRepository(input: string, forceRefresh = false): Promise<GitHubBundle> {
   const parsed = parseRepositoryInput(input)
-  if (!parsed) throw new GitHubRequestError('Enter a GitHub repository URL, like github.com/owner/repo.', 400, null, null)
+  if (!parsed)
+    throw new GitHubRequestError(
+      'Enter a GitHub repository URL, like github.com/owner/repo.',
+      400,
+      null,
+      null,
+    )
   const cacheKey = parsed.fullName.toLowerCase()
   const cached = cache.get(cacheKey)
   if (cached && !forceRefresh) return cached
@@ -220,7 +240,9 @@ export async function fetchRepository(input: string, forceRefresh = false): Prom
       continue
     }
     try {
-      const result = await requestJson<unknown[]>(categoryUrl(parsed.owner, parsed.name, key, repository.defaultBranch))
+      const result = await requestJson<unknown[]>(
+        categoryUrl(parsed.owner, parsed.name, key, repository.defaultBranch),
+      )
       setFirstCategoryPage(bundle, key, result.data)
       categories[key] = { nextPage: result.nextPage, message: null }
       loadedPages[key] = 1
@@ -237,7 +259,8 @@ export async function fetchRepository(input: string, forceRefresh = false): Prom
       rateLimit = result.rateLimit
       bundle.rateLimit = rateLimit
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'This event history could not be loaded.'
+      const message =
+        error instanceof Error ? error.message : 'This event history could not be loaded.'
       categories[key] = { nextPage: null, message }
       if (key === 'commits') bundle.commitHistory.message = message
       notes.push(`${key}: ${message}`)
@@ -263,11 +286,13 @@ export async function fetchRepository(input: string, forceRefresh = false): Prom
         const result = await requestJson<unknown[]>(`${baseUrl}/${extra.path}`)
         if (extra.key === 'branches') bundle.branches = result.data as GitHubBundle['branches']
         else bundle.contributors = result.data as GitHubBundle['contributors']
-        if (result.nextPage) notes.push(`Only the first 100 ${extra.key} are included in this view.`)
+        if (result.nextPage)
+          notes.push(`Only the first 100 ${extra.key} are included in this view.`)
         rateLimit = result.rateLimit
         bundle.rateLimit = rateLimit
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'This repository signal could not be loaded.'
+        const message =
+          error instanceof Error ? error.message : 'This repository signal could not be loaded.'
         notes.push(`${extra.key}: ${message}`)
         if (error instanceof GitHubRequestError) {
           rateLimit = { remaining: error.remaining, resetAt: error.resetAt }
@@ -317,7 +342,8 @@ export async function loadEarlierHistory(bundle: GitHubBundle): Promise<GitHubBu
         break
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Earlier history could not be loaded.'
+      const message =
+        error instanceof Error ? error.message : 'Earlier history could not be loaded.'
       updated.categories[key] = { ...status, message }
       updated.notes.push(`${key}: ${message}`)
       if (error instanceof GitHubRequestError) {
@@ -359,8 +385,11 @@ function cloneBundle(bundle: GitHubBundle): GitHubBundle {
   }
 }
 
-function uniqueCommits(existing: GitHubBundle['commits'], incoming: GitHubBundle['commits']): GitHubBundle['commits'] {
-  const known = new Set(existing.map((commit) => commit.sha))
+function uniqueCommits(
+  existing: GitHubBundle['commits'],
+  incoming: GitHubBundle['commits'],
+): GitHubBundle['commits'] {
+  const known = new Set(existing.map(commit => commit.sha))
   const unique = [...existing]
   for (const commit of incoming) {
     if (known.has(commit.sha)) continue
@@ -370,7 +399,10 @@ function uniqueCommits(existing: GitHubBundle['commits'], incoming: GitHubBundle
   return unique
 }
 
-function saveCommitHistory(bundle: GitHubBundle, onProgress?: (bundle: GitHubBundle) => void): GitHubBundle {
+function saveCommitHistory(
+  bundle: GitHubBundle,
+  onProgress?: (bundle: GitHubBundle) => void,
+): GitHubBundle {
   const key = bundle.repository.fullName.toLowerCase()
   const latest = cache.get(key)
   const saved = latest
@@ -439,7 +471,10 @@ export async function loadAllCommitHistory(
 
     let result: Awaited<ReturnType<typeof requestJson<GitHubBundle['commits']>>>
     try {
-      result = await requestJson<GitHubBundle['commits']>(current.categories.commits.nextPage, signal)
+      result = await requestJson<GitHubBundle['commits']>(
+        current.categories.commits.nextPage,
+        signal,
+      )
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         current = {
@@ -448,12 +483,14 @@ export async function loadAllCommitHistory(
         }
         return saveCommitHistory(current, onProgress)
       }
-      const message = error instanceof Error ? error.message : 'Earlier commits could not be loaded.'
+      const message =
+        error instanceof Error ? error.message : 'Earlier commits could not be loaded.'
       current = {
         ...current,
-        rateLimit: error instanceof GitHubRequestError
-          ? { remaining: error.remaining, resetAt: error.resetAt }
-          : current.rateLimit,
+        rateLimit:
+          error instanceof GitHubRequestError
+            ? { remaining: error.remaining, resetAt: error.resetAt }
+            : current.rateLimit,
         commitHistory: { ...current.commitHistory, isLoading: false, message },
       }
       return saveCommitHistory(current, onProgress)

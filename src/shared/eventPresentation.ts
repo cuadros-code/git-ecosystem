@@ -1,17 +1,74 @@
 import type { EventKind, TimelineEvent } from '../domain/types'
 
-export const EVENT_META: Record<EventKind, { label: string; singular: string; short: string; color: string; icon: string; description: string }> = {
-  commit: { label: 'Commits', singular: 'Commit', short: 'Terrain', color: 'var(--gold)', icon: '▣', description: 'Selected commits shape the shoreline and raise terraces.' },
-  branch: { label: 'Branches', singular: 'Branch', short: 'Trails', color: 'var(--sage)', icon: '⌁', description: 'Up to eight active branches appear as wooden trails.' },
-  pull_request: { label: 'Pull requests', singular: 'Pull request', short: 'Bridges', color: 'var(--wood-light)', icon: '▱', description: 'Up to eight pull requests add short bridges; merged ones receive a gold cap.' },
-  bug: { label: 'Bug reports', singular: 'Bug report', short: 'Markers', color: 'var(--beast)', icon: '◈', description: 'Recent bug-labeled issues glow red while open and become flowers when resolved.' },
-  contributor: { label: 'Contributors', singular: 'Contributor', short: 'Trees', color: 'var(--gold)', icon: '◆', description: 'Contributors appear as spaced trees with varied canopy shapes.' },
-  release: { label: 'Releases', singular: 'Release', short: 'Beacon', color: 'var(--roof-light)', icon: '⚑', description: 'Releases add red and pale bands to the lighthouse.' },
+export const EVENT_META: Record<
+  EventKind,
+  {
+    label: string
+    singular: string
+    short: string
+    color: string
+    icon: string
+    description: string
+  }
+> = {
+  commit: {
+    label: 'Commits',
+    singular: 'Commit',
+    short: 'Terrain',
+    color: 'var(--gold)',
+    icon: '▣',
+    description: 'Selected commits shape the shoreline and raise terraces.',
+  },
+  branch: {
+    label: 'Branches',
+    singular: 'Branch',
+    short: 'Trails',
+    color: 'var(--sage)',
+    icon: '⌁',
+    description: 'Up to eight active branches appear as wooden trails.',
+  },
+  pull_request: {
+    label: 'Pull requests',
+    singular: 'Pull request',
+    short: 'Bridges',
+    color: 'var(--wood-light)',
+    icon: '▱',
+    description: 'Up to eight pull requests add short bridges; merged ones receive a gold cap.',
+  },
+  bug: {
+    label: 'Bug reports',
+    singular: 'Bug report',
+    short: 'Markers',
+    color: 'var(--beast)',
+    icon: '◈',
+    description: 'Recent bug-labeled issues glow red while open and become flowers when resolved.',
+  },
+  contributor: {
+    label: 'Contributors',
+    singular: 'Contributor',
+    short: 'Trees',
+    color: 'var(--gold)',
+    icon: '◆',
+    description: 'Contributors appear as spaced trees with varied canopy shapes.',
+  },
+  release: {
+    label: 'Releases',
+    singular: 'Release',
+    short: 'Beacon',
+    color: 'var(--roof-light)',
+    icon: '⚑',
+    description: 'Releases add red and pale bands to the lighthouse.',
+  },
 }
 
-export function formatDate(date: string, options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' }) {
+export function formatDate(
+  date: string,
+  options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' },
+) {
   const time = Date.parse(date)
-  return Number.isFinite(time) ? new Intl.DateTimeFormat('en-US', options).format(time) : 'Unknown date'
+  return Number.isFinite(time)
+    ? new Intl.DateTimeFormat('en-US', options).format(time)
+    : 'Unknown date'
 }
 
 export function compactNumber(value: number) {
@@ -43,7 +100,10 @@ export function eventSubtitle(event: TimelineEvent) {
 
 export function eventStatus(event: TimelineEvent, currentDate: string) {
   const current = Date.parse(currentDate)
-  if (event.kind === 'bug') return event.closedAt && Date.parse(event.closedAt) <= current ? 'Alert resolved' : 'Active alert'
+  if (event.kind === 'bug')
+    return event.closedAt && Date.parse(event.closedAt) <= current
+      ? 'Alert resolved'
+      : 'Active alert'
   if (event.kind === 'pull_request') {
     if (event.mergedAt && Date.parse(event.mergedAt) <= current) return 'Bridge complete'
     if (event.closedAt && Date.parse(event.closedAt) <= current) return 'Bridge closed'
@@ -54,4 +114,3 @@ export function eventStatus(event: TimelineEvent, currentDate: string) {
   if (event.kind === 'contributor') return 'Tree planted'
   if (event.kind === 'commit') return 'Terrain shaped'
 }
-

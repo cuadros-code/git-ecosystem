@@ -67,7 +67,8 @@ export interface ReleaseEvent extends TimelineEventBase {
   isPrerelease: boolean
 }
 
-export type TimelineEvent = CommitEvent | BranchEvent | PullRequestEvent | BugEvent | ContributorEvent | ReleaseEvent
+export type TimelineEvent =
+  CommitEvent | BranchEvent | PullRequestEvent | BugEvent | ContributorEvent | ReleaseEvent
 
 export interface WorldState {
   date: string
@@ -88,4 +89,3 @@ export interface WorldState {
   moduleCount: number
   selectedEvents: TimelineEvent[]
 }
-

@@ -1,4 +1,11 @@
-import type { BugEvent, CommitEvent, ContributorEvent, PullRequestEvent, ReleaseEvent, TimelineEvent } from '../../domain/types'
+import type {
+  BugEvent,
+  CommitEvent,
+  ContributorEvent,
+  PullRequestEvent,
+  ReleaseEvent,
+  TimelineEvent,
+} from '../../domain/types'
 import type { GitHubBundle, GitHubCommitRecord } from './types'
 import { iso } from '../../domain/date'
 
@@ -28,7 +35,7 @@ export function normalizeBundle(bundle: GitHubBundle): TimelineEvent[] {
       author,
       url: commit.html_url,
       sha: commit.sha,
-      parents: commit.parents.map((parent) => parent.sha),
+      parents: commit.parents.map(parent => parent.sha),
     }
     events.push(event)
     if (author) {
@@ -39,7 +46,9 @@ export function normalizeBundle(bundle: GitHubBundle): TimelineEvent[] {
   }
 
   for (const [login, firstCommit] of seenContributors) {
-    const identity = bundle.contributors.find((contributor) => contributor.login.toLowerCase() === login)
+    const identity = bundle.contributors.find(
+      contributor => contributor.login.toLowerCase() === login,
+    )
     const event: ContributorEvent = {
       id: `contributor-${login}`,
       kind: 'contributor',
@@ -66,7 +75,8 @@ export function normalizeBundle(bundle: GitHubBundle): TimelineEvent[] {
         kind: 'contributor',
         at: latestLoadedCommit.at,
         title: `${contributor.login} joined the project`,
-        detail: 'Current contributor; their first contribution date is not available from this public endpoint',
+        detail:
+          'Current contributor; their first contribution date is not available from this public endpoint',
         author: contributor.login,
         url: contributor.html_url,
         login: contributor.login,
@@ -77,11 +87,16 @@ export function normalizeBundle(bundle: GitHubBundle): TimelineEvent[] {
   }
 
   for (const branch of bundle.branches) {
-    const matchingCommit = bundle.commits.find((commit) => commit.sha === branch.commit.sha)
-    const branchAnchor = matchingCommit?.commit.committer?.date
-      ?? bundle.commits.map((commit) => commit.commit.committer?.date).filter((date): date is string => Boolean(date)).sort().at(-1)
-      ?? bundle.repository.pushedAt
-      ?? fallbackDate
+    const matchingCommit = bundle.commits.find(commit => commit.sha === branch.commit.sha)
+    const branchAnchor =
+      matchingCommit?.commit.committer?.date ??
+      bundle.commits
+        .map(commit => commit.commit.committer?.date)
+        .filter((date): date is string => Boolean(date))
+        .sort()
+        .at(-1) ??
+      bundle.repository.pushedAt ??
+      fallbackDate
     events.push({
       id: `branch-${branch.name}`,
       kind: 'branch',
@@ -118,8 +133,8 @@ export function normalizeBundle(bundle: GitHubBundle): TimelineEvent[] {
 
   for (const issue of bundle.issues) {
     if (issue.pull_request) continue
-    const labels = issue.labels.map((label) => label.name)
-    if (!labels.some((label) => label.toLowerCase() === 'bug')) continue
+    const labels = issue.labels.map(label => label.name)
+    if (!labels.some(label => label.toLowerCase() === 'bug')) continue
     const event: BugEvent = {
       id: `bug-${issue.number}`,
       kind: 'bug',
@@ -150,6 +165,7 @@ export function normalizeBundle(bundle: GitHubBundle): TimelineEvent[] {
     events.push(event)
   }
 
-  return events.sort((left, right) => Date.parse(left.at) - Date.parse(right.at) || left.id.localeCompare(right.id))
+  return events.sort(
+    (left, right) => Date.parse(left.at) - Date.parse(right.at) || left.id.localeCompare(right.id),
+  )
 }
-
