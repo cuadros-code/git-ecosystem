@@ -29,6 +29,7 @@ export default function SampleWorldPreview() {
         repoSizeKb={DEMO_REPOSITORY.sizeKb}
         events={DEMO_EVENTS}
         state={SAMPLE_STATE}
+        timelineProgress={1}
         selectedEventId={null}
         visibleKinds={WORLD_LAYERS}
         onSelectEvent={() => undefined}

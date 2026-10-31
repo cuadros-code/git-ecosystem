@@ -242,6 +242,7 @@ export function ExplorerScreen({
                   repoSizeKb={repository.sizeKb}
                   events={events}
                   state={worldState}
+                  timelineProgress={sliderValue / 1000}
                   selectedEventId={selectedEventId}
                   visibleKinds={visibleKinds}
                   onSelectEvent={id => {

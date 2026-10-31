@@ -5,6 +5,7 @@ export interface RepositoryWorldProps {
   repoSizeKb: number
   events: TimelineEvent[]
   state: WorldState
+  timelineProgress: number
   selectedEventId: string | null
   visibleKinds: Set<EventKind>
   onSelectEvent: (id: string) => void

@@ -55,6 +55,10 @@ function createMaterials() {
   ) as Record<VoxelType, THREE.MeshStandardMaterial>
 }
 
+function rotationForTimeline(progress: number) {
+  return Math.PI * 2 * Math.min(1, Math.max(0, progress))
+}
+
 export default function RepositoryWorld(props: RepositoryWorldProps) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const sceneRef = useRef<THREE.Scene | null>(null)
@@ -81,6 +85,7 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
     props.state,
     props.visibleKinds,
   )
+  const timelineRotation = rotationForTimeline(props.timelineProgress)
 
   useEffect(() => {
     const host = hostRef.current
@@ -324,6 +329,7 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
       if (renderer && onPointerUp) renderer.domElement.removeEventListener('pointerup', onPointerUp)
       if (worldGroupRef.current) {
         gsap.killTweensOf(worldGroupRef.current.scale)
+        gsap.killTweensOf(worldGroupRef.current.rotation)
         sceneRef.current?.remove(worldGroupRef.current)
       }
       renderer?.dispose()
@@ -409,19 +415,51 @@ export default function RepositoryWorld(props: RepositoryWorldProps) {
     const previousWorld = worldGroupRef.current
     if (previousWorld) {
       gsap.killTweensOf(previousWorld.scale)
+      gsap.killTweensOf(previousWorld.rotation)
       scene.remove(previousWorld)
     }
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    world.rotation.y = previousWorld ? previousWorld.rotation.y : timelineRotation
     scene.add(world)
     worldGroupRef.current = world
     eventPositionsRef.current = generated.eventPositions
 
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (previousWorld) {
+      if (reduceMotion) {
+        world.rotation.y = rotationForTimeline(propsRef.current.timelineProgress)
+      } else {
+        gsap.to(world.rotation, {
+          y: rotationForTimeline(propsRef.current.timelineProgress),
+          duration: 0.48,
+          ease: 'power2.out',
+          overwrite: 'auto',
+        })
+      }
+    }
+
+    if (!reduceMotion) {
       world.scale.set(0.97, 0.83, 0.97)
       gsap.to(world.scale, { x: 1, y: 1, z: 1, duration: 0.42, ease: 'power2.out' })
     }
     updateHighlight(propsRef.current.selectedEventId)
     renderer.render(scene, cameraRef.current!)
   }, [currentWorldKey])
+
+  useEffect(() => {
+    const world = worldGroupRef.current
+    if (!world) return
+    gsap.killTweensOf(world.rotation)
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      world.rotation.y = timelineRotation
+      return
+    }
+    gsap.to(world.rotation, {
+      y: timelineRotation,
+      duration: 0.48,
+      ease: 'power2.out',
+      overwrite: 'auto',
+    })
+  }, [timelineRotation])
 
   useEffect(() => {
     updateHighlight(props.selectedEventId)
