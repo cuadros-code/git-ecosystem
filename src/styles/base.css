@@ -60,6 +60,16 @@ a {
   color: inherit;
   text-decoration: none;
 }
+.project-source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #b8c8b7;
+  transition: color 0.18s ease;
+}
+.project-source-link:hover {
+  color: var(--firefly);
+}
 button:focus-visible,
 a:focus-visible,
 input:focus-visible {

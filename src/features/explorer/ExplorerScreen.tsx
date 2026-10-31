@@ -9,6 +9,7 @@ import {
 } from '../../shared/eventPresentation'
 import { Icon } from '../../shared/Icon'
 import { BrandMark } from '../../shared/BrandMark'
+import { PROJECT_REPOSITORY_URL } from '../../shared/project'
 import { EventDetails, SignalRow, WorldGuide, WorldSummary } from './Inspector'
 import { TimelineControls } from './TimelineControls'
 import type { useExplorer } from './useExplorer'
@@ -352,6 +353,15 @@ export function ExplorerScreen({
             {formatDate(repository.createdAt, { month: 'short', year: 'numeric' })}
           </span>
           <span>Read-only public data · No sign-in needed</span>
+          <a
+            className="project-source-link"
+            href={PROJECT_REPOSITORY_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Icon name="github" size={13} />
+            Git Ecosystem source
+          </a>
         </footer>
       </div>
     </main>

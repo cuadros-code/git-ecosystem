@@ -4,6 +4,7 @@ import { gsap } from 'gsap'
 import SampleWorldPreview from '../world/SampleWorldPreview'
 import { Icon } from '../../shared/Icon'
 import { BrandMark } from '../../shared/BrandMark'
+import { PROJECT_REPOSITORY_URL } from '../../shared/project'
 
 export function Landing({
   input,
@@ -205,6 +206,15 @@ export function Landing({
 
       <footer className="landing-footer">
         <span>Git Ecosystem turns public project history into a living world.</span>
+        <a
+          className="project-source-link"
+          href={PROJECT_REPOSITORY_URL}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Icon name="github" size={13} />
+          View source on GitHub
+        </a>
         <span>
           Every island begins with one commit <span className="footer-spark">◆</span>
         </span>
